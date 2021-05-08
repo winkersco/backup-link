@@ -9,8 +9,10 @@ import time
 class BackupLink:
     """MikrotikExtractor class object"""
 
-    def __init__(self, input_filepath, output_filepath, verbose):
+    def __init__(self, extensions, input_filepath, output_filepath, verbose):
         """Initialize MikrotikExtractor class object."""
+
+        self.extensions = extensions
         with open(input_filepath) as self.input_file:
             self.urls = self.input_file.read().splitlines()
         self.output_filepath = output_filepath
@@ -18,6 +20,7 @@ class BackupLink:
         self.backup_links = []
 
     def create_output(self):
+        """Create output for links"""
         with open(self.output_filepath, 'w') as file:
             file.writelines('\n'.join(self.backup_links))
 
@@ -30,14 +33,10 @@ class BackupLink:
                 url)
             if m:
                 protocol = m.group('protocol') if m.group('protocol') else ''
-                # cname = m.group('cname') if m.group('cname') else ''
                 domain = m.group('domain')
                 top_level_domain = m.group('top_level_domain')
 
-                print(protocol, domain, top_level_domain)
-
-                extensions = ['zip', 'tar', 'tar.gz', 'rar', 'sql', 'gzip', '7z', 'gz', 'bz2']
-                for extension in extensions:
+                for extension in self.extensions:
                     backups = [
                         f'{protocol}{domain}{top_level_domain}/{domain}{extension}',
                         f'{protocol}{domain}{top_level_domain}/{domain}{top_level_domain}.{extension}',
@@ -70,14 +69,20 @@ def run():
 
     parser = argparse.ArgumentParser(description="Backup Link")
     parser.add_argument(
-        "-f", "--file", dest="input_filepath", action="store", required=True,
-        help="File containing urls, 1 host per line."
+        "-e", "--extensions", dest="extensions", action="store", nargs="+",
+        default=["zip", "tar", "tar.gz", "rar", "sql", "gzip", "7z", "gz", "bz2"],
+        help="extensions that should supported in output."
+             " Default:['zip', 'tar', 'tar.gz', 'rar', 'sql', 'gzip', '7z', 'gz', 'bz2']"
     )
     parser.add_argument(
-        "-o", "--output", dest="output_filepath", action="store", help="File to save results."
+        "-f", "--file", dest="input_filepath", action="store", required=True,
+        help="file containing urls, 1 host per line."
+    )
+    parser.add_argument(
+        "-o", "--output", dest="output_filepath", action="store", help="file to save results."
     )
     parser.add_argument("-q", "--quiet", action="store_false", dest="verbose", default=True,
-                        help="Don't print status messages to stdout")
+                        help="not print status messages to stdout. Default=True")
 
     args = parser.parse_args()
 
