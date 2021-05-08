@@ -1,5 +1,6 @@
 import argparse
 import os
+import random
 import re
 import sys
 import time
@@ -25,28 +26,32 @@ class BackupLink:
 
         for index, url in enumerate(self.urls):
             m = re.search(
-                '(?P<protocol>https?://)?(?P<cname>([A-Za-z_0-9-]+\.)+?)?(?P<domain>[A-Za-z_0-9-]+\.)(?P<top_level_domain>([A-Za-z]+\.)?[A-Za-z]+).*',
+                '(?P<protocol>https?://)?(?P<domain>[A-Za-z_0-9-]+\.)(?P<top_level_domain>([A-Za-z]+\.)?[A-Za-z]+).*',
                 url)
             if m:
                 protocol = m.group('protocol') if m.group('protocol') else ''
-                cname = m.group('cname') if m.group('cname') else ''
+                # cname = m.group('cname') if m.group('cname') else ''
                 domain = m.group('domain')
                 top_level_domain = m.group('top_level_domain')
 
-                backup_1 = f'{protocol}{cname}{domain}{top_level_domain}/{domain}zip'
-                backup_2 = f'{protocol}{cname}{domain}{top_level_domain}/{domain}{top_level_domain}.zip'
-                self.backup_links.append(backup_1)
-                self.backup_links.append(backup_2)
+                print(protocol, domain, top_level_domain)
 
-                if cname:
-                    backup_3 = f'{protocol}{cname}{domain}{top_level_domain}/{cname}{domain}zip'
-                    backup_4 = f'{protocol}{cname}{domain}{top_level_domain}/{cname}{domain}{top_level_domain}.zip'
-                    self.backup_links.append(backup_3)
-                    self.backup_links.append(backup_4)
+                extensions = ['zip', 'tar', 'tar.gz', 'rar', 'sql', 'gzip', '7z', 'gz', 'bz2']
+                for extension in extensions:
+                    backups = [
+                        f'{protocol}{domain}{top_level_domain}/{domain}{extension}',
+                        f'{protocol}{domain}{top_level_domain}/{domain}{top_level_domain}.{extension}',
+                        f'{protocol}{domain}{top_level_domain}/www.{domain}{extension}',
+                        f'{protocol}{domain}{top_level_domain}/www.{domain}{top_level_domain}.{extension}',
+                    ]
+                    for backup in backups:
+                        self.backup_links.append(backup)
 
-                if self.verbose:
-                    print(backup_1)
-                    print(backup_2)
+                random.shuffle(self.backup_links)
+
+                for backup in self.backup_links:
+                    if self.verbose:
+                        print(backup)
 
         if self.output_filepath:
             self.create_output()
@@ -65,7 +70,8 @@ def run():
 
     parser = argparse.ArgumentParser(description="Backup Link")
     parser.add_argument(
-        "-f", "--file", dest="input_filepath", action="store", required=True, help="File containing urls, 1 host per line."
+        "-f", "--file", dest="input_filepath", action="store", required=True,
+        help="File containing urls, 1 host per line."
     )
     parser.add_argument(
         "-o", "--output", dest="output_filepath", action="store", help="File to save results."
